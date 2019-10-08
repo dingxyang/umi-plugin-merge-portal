@@ -11,26 +11,20 @@
     "url": "git+https://github.com/xyding1993/umi-plugin-merge-portal.git"
   },
   "peerDependencies": {
-    "antd": "4.x",
     "umi": "2.x || ^2.9.0-0"
   },
   "main": "lib/index.js",
   "scripts": {
-    "start": "CURRENT_PROJECT=example umi ui",
-    "build": "father-build",
+    "build": "umi-tools build",
     "prepublishOnly": "npm run build && np --no-cleanup --yolo --no-publish"
   },
   "devDependencies": {
-    "father-build": "^1.8.0",
-    "np": "^5.0.3",
-    "umi": "^2.9.0",
-    "umi-types": "^0.3.17"
+    "umi-tools": "*",
+    "np": "^3.0.4"
   },
   "files": [
-    "dist",
     "lib",
-    "src",
-    "ui"
+    "src"
   ],
   "license": "MIT",
   "bugs": {
