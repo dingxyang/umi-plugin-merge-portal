@@ -427,11 +427,25 @@ Examples:
   api._registerConfig(() => {
     return () => {
       return {
-        name: "mergePortal",
+        name: "builderRepository",
         validate(val) {
           assert(
             isPlainObject(val),
-            `Configure item replace portal should be Plain Object, but got ${val}.`
+            `Configure item builderRepository should be Plain Object, but got ${val}.`
+          );
+        }
+      };
+    };
+  });
+
+  api._registerConfig(() => {
+    return () => {
+      return {
+        name: "componentsRepository",
+        validate(val) {
+          assert(
+            isPlainObject(val),
+            `Configure item componentsRepository should be Plain Object, but got ${val}.`
           );
         }
       };
