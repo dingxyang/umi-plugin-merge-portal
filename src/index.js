@@ -1,29 +1,40 @@
-import assert from 'assert';
-import chalk from 'chalk';
-import { existsSync } from 'fs';
-import { dirname, join } from 'path';
-import execa from 'execa';
-import ora from 'ora';
-import { merge, isPlainObject } from 'lodash';
-import { getParsedData, makeSureMaterialsTempPathExist } from './download';
-import writeNewRoute from './writeNewRoute';
-import { dependenciesConflictCheck, getNameFromPkg, getAllBlockDependencies } from './getBlockGenerator';
+import assert from "assert";
+import chalk from "chalk";
+import { existsSync } from "fs";
+import { dirname, join } from "path";
+import execa from "execa";
+import ora from "ora";
+import { merge, isPlainObject } from "lodash";
+import { getParsedData, makeSureMaterialsTempPathExist } from "./download";
+// import writeNewRoute from "./writeNewRoute";
+import {
+  dependenciesConflictCheck,
+  getNameFromPkg,
+  getAllBlockDependencies
+} from "./getBlockGenerator";
 
 export default api => {
   const { log, paths, debug, applyPlugins, config } = api;
-  const mergePortalConfig = config['mergePortal'] || {};
-
-  debug(`merge-portal ${mergePortalConfig}`);
+  let mergePortalConfig = config["builderRepository"] || {};
 
   async function block(args = {}) {
     let retCtx;
     switch (args._[0]) {
-      case 'pull':
+      case "builder":
+        retCtx = await pull(args);
+        break;
+      case "components":
+        mergePortalConfig = config["componentsRepository"] || {};
         retCtx = await pull(args);
         break;
       default:
-        throw new Error(`Please run ${chalk.cyan.underline('umi help merge-portal')} to checkout the usage`);
+        throw new Error(
+          `Please run ${chalk.cyan.underline(
+            "umi help merge-portal"
+          )} to checkout the usage`
+        );
     }
+    debug(`merge-portal ${mergePortalConfig}`);
     return retCtx; // return for test
   }
 
@@ -52,9 +63,9 @@ export default api => {
   }
 
   async function gitUpdate(ctx, spinner) {
-    spinner.start('Git fetch');
+    spinner.start("Git fetch");
     try {
-      await execa(`git`, ['fetch'], {
+      await execa(`git`, ["fetch"], {
         cwd: ctx.templateTmpDirPath
       });
     } catch (e) {
@@ -65,7 +76,7 @@ export default api => {
 
     spinner.start(`Git checkout ${ctx.branch}`);
     try {
-      await execa(`git`, ['checkout', ctx.branch], {
+      await execa(`git`, ["checkout", ctx.branch], {
         cwd: ctx.templateTmpDirPath
       });
     } catch (e) {
@@ -74,7 +85,7 @@ export default api => {
     }
     spinner.succeed();
 
-    spinner.start('Git pull');
+    spinner.start("Git pull");
     try {
       await execa(`git`, [`pull`], {
         cwd: ctx.templateTmpDirPath
@@ -87,12 +98,16 @@ export default api => {
   }
 
   async function gitClone(ctx, spinner) {
-    spinner.start('Clone git repo');
+    spinner.start("Clone git repo");
     try {
-      await execa(`git`, [`clone`, ctx.repo, ctx.id, `--single-branch`, `-b`, ctx.branch], {
-        cwd: ctx.blocksTempPath,
-        env: process.env
-      });
+      await execa(
+        `git`,
+        [`clone`, ctx.repo, ctx.id, `--single-branch`, `-b`, ctx.branch],
+        {
+          cwd: ctx.blocksTempPath,
+          env: process.env
+        }
+      );
     } catch (e) {
       spinner.fail();
       throw new Error(e);
@@ -104,20 +119,31 @@ export default api => {
     const spinner = ora();
 
     // 1. parse url and args
-    spinner.start('Parse url and args');
+    spinner.start("Parse url and args");
     const url = args._[1] || mergePortalConfig.url;
     assert(
       url,
       `run ${chalk.cyan.underline(
-        'umi help merge-portal'
-      )} to checkout the usage, merge-portal config is ${JSON.stringify(mergePortalConfig, null, 2)}`
+        "umi help merge-portal"
+      )} to checkout the usage, merge-portal config is ${JSON.stringify(
+        mergePortalConfig,
+        null,
+        2
+      )}`
     );
 
-    const useYarn = existsSync(join(paths.cwd, 'yarn.lock'));
-    const defaultNpmClient = mergePortalConfig.npmClient || (useYarn ? 'yarn' : 'npm');
+    const useYarn = existsSync(join(paths.cwd, "yarn.lock"));
+    const defaultNpmClient =
+      mergePortalConfig.npmClient || (useYarn ? "yarn" : "npm");
     debug(`defaultNpmClient: ${defaultNpmClient}`);
     debug(`args: ${JSON.stringify(args)}`);
-    const { path, npmClient = defaultNpmClient, dryRun, skipDependencies, updateRoutes } = args;
+    const {
+      path,
+      npmClient = defaultNpmClient,
+      dryRun,
+      skipDependencies,
+      updateRoutes
+    } = args;
     const ctx = getCtx(url);
     spinner.succeed();
 
@@ -135,7 +161,7 @@ export default api => {
     assert(existsSync(ctx.sourcePath), `${ctx.sourcePath} don't exists`);
 
     // get block's package.json
-    const pkgPath = join(ctx.sourcePath, 'package.json');
+    const pkgPath = join(ctx.sourcePath, "package.json");
     if (!existsSync(pkgPath)) {
       throw new Error(`not find package.json in ${this.sourcePath}`);
     } else {
@@ -150,7 +176,9 @@ export default api => {
         return log.error("not find name in block's package.json");
       }
       ctx.routePath = `/${blockName}`;
-      log.info(`Not find --path, use block name '${ctx.routePath}' as the target path.`);
+      log.info(
+        `Not find --path, use block name '${ctx.routePath}' as the target path.`
+      );
     } else {
       ctx.routePath = path;
     }
@@ -163,27 +191,44 @@ export default api => {
     // 4. install additional dependencies
     // check dependencies conflict and install dependencies
     if (skipDependencies) {
-      debug('skip dependencies');
+      debug("skip dependencies");
     } else {
       // read project package.json
-      const projectPkgPath = applyPlugins('_modifyBlockPackageJSONPath', {
-        initialValue: join(paths.cwd, 'package.json')
+      const projectPkgPath = applyPlugins("_modifyBlockPackageJSONPath", {
+        initialValue: join(paths.cwd, "package.json")
       });
-      assert(existsSync(projectPkgPath), `No package.json found in your project`);
+      assert(
+        existsSync(projectPkgPath),
+        `No package.json found in your project`
+      );
       // eslint-disable-next-line
       const projectPkg = require(projectPkgPath);
 
       // get _mock.js dependencie
       let devDependencies = {};
-      const allBlockDependencies = getAllBlockDependencies(ctx.templateTmpDirPath, ctx.pkg);
+      const allBlockDependencies = getAllBlockDependencies(
+        ctx.templateTmpDirPath,
+        ctx.pkg
+      );
       // get confilict dependencies and lack dependencies
-      const { conflicts, lacks, devConflicts, devLacks } = applyPlugins('_modifyBlockDependencies', {
-        initialValue: dependenciesConflictCheck(allBlockDependencies, projectPkg.dependencies, devDependencies, {
-          ...projectPkg.devDependencies,
-          ...projectPkg.dependencies
-        })
-      });
-      debug(`conflictDeps ${conflicts}, lackDeps ${lacks}`, `devConflictDeps ${devConflicts}, devLackDeps ${devLacks}`);
+      const { conflicts, lacks, devConflicts, devLacks } = applyPlugins(
+        "_modifyBlockDependencies",
+        {
+          initialValue: dependenciesConflictCheck(
+            allBlockDependencies,
+            projectPkg.dependencies,
+            devDependencies,
+            {
+              ...projectPkg.devDependencies,
+              ...projectPkg.dependencies
+            }
+          )
+        }
+      );
+      debug(
+        `conflictDeps ${conflicts}, lackDeps ${lacks}`,
+        `devConflictDeps ${devConflicts}, devLackDeps ${devLacks}`
+      );
 
       // find confilict dependencies throw error
       const allConflicts = [...conflicts, ...devConflicts];
@@ -192,22 +237,34 @@ export default api => {
   find dependencies conflict between block and your project:
   ${allConflicts
     .map(info => {
-      return `* ${info[0]}: ${info[2]}(your project) not compatible with ${info[1]}(block)`;
+      return `* ${info[0]}: ${info[2]}(your project) not compatible with ${
+        info[1]
+      }(block)`;
     })
-    .join('\n')}`);
+    .join("\n")}`);
       }
 
       // find lack confilict, auto install
       if (dryRun) {
-        debug('dryRun is true, skip install dependencies');
+        debug("dryRun is true, skip install dependencies");
       } else {
         if (lacks.length) {
           const deps = lacks.map(dep => `${dep[0]}@${dep[1]}`);
-          spinner.start(`Install additional dependencies ${deps.join(',')} with ${npmClient}`);
+          spinner.start(
+            `Install additional dependencies ${deps.join(
+              ","
+            )} with ${npmClient}`
+          );
           try {
-            await execa(npmClient, npmClient.includes('yarn') ? ['add', ...deps] : ['install', ...deps, '--save'], {
-              cwd: dirname(projectPkgPath)
-            });
+            await execa(
+              npmClient,
+              npmClient.includes("yarn")
+                ? ["add", ...deps]
+                : ["install", ...deps, "--save"],
+              {
+                cwd: dirname(projectPkgPath)
+              }
+            );
           } catch (e) {
             spinner.fail();
             throw new Error(e);
@@ -220,11 +277,17 @@ export default api => {
           const devDeps = devLacks
             .filter(dep => !lacks.find(item => item[0] === dep[0]))
             .map(dep => `${dep[0]}@${dep[1]}`);
-          spinner.start(`Install additional devDependencies ${devDeps.join(',')} with ${npmClient}`);
+          spinner.start(
+            `Install additional devDependencies ${devDeps.join(
+              ","
+            )} with ${npmClient}`
+          );
           try {
             await execa(
               npmClient,
-              npmClient.includes('yarn') ? ['add', ...devDeps, '--dev'] : ['install', ...devDeps, '--save-dev'],
+              npmClient.includes("yarn")
+                ? ["add", ...devDeps, "--dev"]
+                : ["install", ...devDeps, "--save-dev"],
               {
                 cwd: dirname(projectPkgPath)
               }
@@ -241,7 +304,7 @@ export default api => {
     // 5. run generator
     spinner.start(`Generate files`);
     spinner.stopAndPersist();
-    const BlockGenerator = require('./getBlockGenerator').default(api);
+    const BlockGenerator = require("./getBlockGenerator").default(api);
     const generator = new BlockGenerator(args._.slice(2), {
       sourcePath: ctx.sourcePath,
       path: ctx.routePath,
@@ -258,7 +321,7 @@ export default api => {
       spinner.fail();
       throw new Error(e);
     }
-    spinner.succeed('Generate files');
+    spinner.succeed("Generate files");
 
     // 6. write routes
     // if (api.config.routes && updateRoutes) {
@@ -313,14 +376,24 @@ Commands:
 
 Options for the ${chalk.cyan(`add`)} command:
 
-  ${chalk.green(`--path              `)} the route path, default the name in package.json
+  ${chalk.green(
+    `--path              `
+  )} the route path, default the name in package.json
   ${chalk.green(`--branch            `)} git branch
-  ${chalk.green(`--npm-client        `)} the npm client, default npm or yarn (if has yarn.lock)
+  ${chalk.green(
+    `--npm-client        `
+  )} the npm client, default npm or yarn (if has yarn.lock)
   ${chalk.green(`--skip-dependencies `)} don't install dependencies
   ${chalk.green(`--update-routes     `)} update the routes
-  ${chalk.green(`--dry-run           `)} for test, don't install dependencies and download
-  ${chalk.green(`--no-wrap           `)} add the block to a independent directory
-  ${chalk.green(`--layout            `)} add as a layout block (add route with empty children)
+  ${chalk.green(
+    `--dry-run           `
+  )} for test, don't install dependencies and download
+  ${chalk.green(
+    `--no-wrap           `
+  )} add the block to a independent directory
+  ${chalk.green(
+    `--layout            `
+  )} add as a layout block (add route with empty children)
 
 Examples:
 
@@ -337,9 +410,9 @@ Examples:
   `.trim();
 
   api.registerCommand(
-    'merge-portal',
+    "merge-portal",
     {
-      description: 'merge-portal related commands, e.g. pull',
+      description: "merge-portal related commands, e.g. pull",
       usage: `umi merge-portal <command>`,
       details
     },
@@ -354,9 +427,12 @@ Examples:
   api._registerConfig(() => {
     return () => {
       return {
-        name: 'mergePortal',
+        name: "mergePortal",
         validate(val) {
-          assert(isPlainObject(val), `Configure item replace portal should be Plain Object, but got ${val}.`);
+          assert(
+            isPlainObject(val),
+            `Configure item replace portal should be Plain Object, but got ${val}.`
+          );
         }
       };
     };
