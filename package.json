@@ -1,6 +1,6 @@
 {
   "name": "umi-plugin-merge-portal",
-  "version": "0.0.9",
+  "version": "0.1.0",
   "description": "Pull code from other projects",
   "authors": {
     "name": "esun",
