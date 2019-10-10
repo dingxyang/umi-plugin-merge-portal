@@ -401,15 +401,15 @@ Options for the ${chalk.cyan(`add`)} command:
 
 Examples:
 
-  ${chalk.gray(`# pull portal by config url`)}
+  ${chalk.gray(`# pull dynamic-builder by config url`)}
   # config.js
-  umi merge-portal pull
+  umi merge-portal builder
 
-  ${chalk.gray(`# pull portal with full url`)}
-  umi merge-portal pull https://github.com/umijs/umi-blocks/tree/master/demo
+  ${chalk.gray(`# pull dynamic-components with full url`)}
+  umi merge-portal components
 
-  ${chalk.gray(`# Add block with specified route path`)}
-  umi merge-portal pull /Users/wangxianxi/Documents/gitlab/
+  ${chalk.gray(`# clear git`)}
+  umi merge-portal clear
 
   `.trim();
 
@@ -428,6 +428,7 @@ Examples:
     }
   );
 
+  // 注册配置项
   api._registerConfig(() => {
     return () => {
       return {
