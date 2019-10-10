@@ -2,7 +2,6 @@ export const SINGULAR_SENSLTIVE = ['pages', 'components', 'models', 'locales', '
 
 export const COVER_FOLDERS = [
   'dynamicComponents',
-  'assets',
   'pages',
   'components',
   'models',
