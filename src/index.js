@@ -6,6 +6,7 @@ import execa from "execa";
 import ora from "ora";
 import { merge, isPlainObject } from "lodash";
 import { getParsedData, makeSureMaterialsTempPathExist } from "./download";
+import clearGitCache from './clearGitCache';
 // import writeNewRoute from "./writeNewRoute";
 import {
   dependenciesConflictCheck,
@@ -20,6 +21,9 @@ export default api => {
   async function block(args = {}) {
     let retCtx;
     switch (args._[0]) {
+      case "clear":
+        await clearGitCache(args, api);
+        break;
       case "builder":
         retCtx = await pull(args);
         break;
